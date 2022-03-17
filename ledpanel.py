@@ -31,7 +31,8 @@ class ledpanel:
         await self.client.disconnect()
 
     def handle_rx(self,_: int, data: bytearray):
-        print("received:", data)
+        # print("received:", data)
+        pass
 
     async def connect(self):
         try:
@@ -104,7 +105,8 @@ class ledpanel:
                 else:
                     bufferline=bufferline+(" %d|" %(x))
             bufferall[y]=bufferline
-            print(bufferall[y])
+            # print(bufferall[y])
+            pass
         
         for i in range(16):
             data=bytearray(bufferall[i],'utf-8')
@@ -324,7 +326,7 @@ class ledpanel:
             else:
                 hexB=("%x"%colorB)
             data=bytearray("$5 0 %s%s%s;"%(hexR,hexG,hexB),'utf-8')
-            print(data)
+            # print(data)
             await self.client.write_gatt_char(CHARACTERISTIC_UUID_RX, data)
             data=bytearray("$5 2;",'utf-8')
             await self.client.write_gatt_char(CHARACTERISTIC_UUID_RX, data)
@@ -350,12 +352,12 @@ class ledpanel:
             else:
                 hexB=("%x"%colorB)
             data=bytearray("$5 0 %s%s%s;"%(hexR,hexG,hexB),'utf-8')
-            print(data)
+            # print(data)
             await self.client.write_gatt_char(CHARACTERISTIC_UUID_RX, data)
             #sleep 10 ms to let mcu's ble stack recover
             await asyncio.sleep(0.01)
             data=bytearray("$5 3 %d %d;"%(pointx,pointy),'utf-8')
-            print(data)
+            # print(data)
             await self.client.write_gatt_char(CHARACTERISTIC_UUID_RX, data)
         else:
             return
