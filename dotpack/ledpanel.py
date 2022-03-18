@@ -1,8 +1,8 @@
 import sys
-import string
+# import string
 import asyncio
 from bleak import BleakClient
-from PIL import Image
+# from PIL import Image
 
 MODEL_NBR_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 CHARACTERISTIC_UUID_RX = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -35,12 +35,16 @@ class ledpanel:
             print(e)
 
     async def disconnect(self):
+        await asyncio.sleep(0.1)
         try:
             await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
-        except:
-            pass
-        finally:
+        except Exception as e:
+            print(e)
+
+        try:
             await self.client.disconnect()
+        except Exception as e:
+            print(e)
 
     async def on(self):
         # data="$1 1;"
