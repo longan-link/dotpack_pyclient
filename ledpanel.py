@@ -27,8 +27,7 @@ class ledpanel:
         self.client= BleakClient(address)
 
     async def __anext__(self):
-        await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
-        await self.client.disconnect()
+        await self.disconnect()
 
     def handle_rx(self,_: int, data: bytearray):
         # print("received:", data)
@@ -45,8 +44,12 @@ class ledpanel:
             print(e)
 
     async def disconnect(self):
-        await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
-        await self.client.disconnect()
+        try:
+            await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
+        except:
+            pass
+        finally:
+            await self.client.disconnect()
 
     async def on(self):
         #data="$1 1;"
