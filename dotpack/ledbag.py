@@ -190,7 +190,8 @@ class DotPack:
 
         if self._is_local():
             self._img.putpixel((x, y), color)
-            self.show_here(self._img)
+            if show:
+                self.show_here(self._img)
         else:
             # to bag
             r, g, b = color
