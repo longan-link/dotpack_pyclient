@@ -336,6 +336,13 @@ class DotPack:
             # to bag
             self._show_image(img, PILimage=PILimage)
 
+    def clear(self):
+        self._img = Image.new(mode="RGB", size=(self.size, self.size))
+        if self._is_local():
+            return self.show()
+        else:
+            self._execute(self._ledpanel.clear())
+
     def set_brightness(self, brightness):
         self._execute(self._ledpanel.set_brightness(brightness))
 
@@ -352,9 +359,6 @@ class DotPack:
     def screen_off(self):
         """关闭屏幕 (仅在硬件上运行, 不支持模拟器)"""
         self._execute(self._ledpanel.off())
-
-    def clear(self):
-        self._execute(self._ledpanel.clear())
 
     def close(self):
         self.disconnect()
