@@ -143,6 +143,7 @@ class DotPack:
 
         self._ledpanel = ledpanel(self.address)
         self._execute(self._ledpanel.connect())
+        print('connected!')
 
     def disconnect(self):
         # print('disconnect')
@@ -155,7 +156,7 @@ class DotPack:
             self.__event_loop.call_soon_threadsafe(self.__event_loop.stop)
             self.__thread.join()
         self.__event_loop.close()
-        print('disconnect!')
+        print('disconnected!')
 
     def load(self, filename):
         """加载图像，像素比例自动缩放到 16x16"""
