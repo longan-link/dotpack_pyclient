@@ -183,7 +183,7 @@ class DotPack:
     def set_pixel(self, x, y, color, show=True):
         """设置 x, y 位置的颜色
 
-        eg: set_pixel(0, 1) = (255, 0, 0)"""
+        eg: set_pixel(0, 1, 'red')"""
         # https://microbit-micropython.readthedocs.io/en/v1.0.1/display.html#microbit.display.set_pixel
         if type(color) == str:
             color = self._COLOR[color]
