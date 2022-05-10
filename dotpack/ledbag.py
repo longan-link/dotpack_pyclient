@@ -250,7 +250,7 @@ class DotPack:
         self.display_char_zh(" ", **kw)
 
     # def displayText(self, text, color1=(230, 0, 0), color2=(0, 250, 250), icon=None):
-    def _display_text(
+    def display_text(
         self, text, color=RED, color1=(0, 0, 0), color2=(0, 0, 0), icon=None
     ):
         """滚动显示英文字符串
