@@ -3,7 +3,7 @@ dotpack
 ======================
 
 
-Python client for dotpack ( Eliteu Programable led matrix bag ).
+Python client for dotpack ( Eliteu Programable led matrix pack ).
 
 
 Install

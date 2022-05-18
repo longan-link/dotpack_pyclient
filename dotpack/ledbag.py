@@ -1,4 +1,5 @@
 import os
+import platform
 import time
 import uuid
 import asyncio
@@ -31,12 +32,15 @@ class DotPack:
     """Class DotPack(16x16) encapsulates the DotPack communication.
     
     from dotpack import DotPack
-    bag = DotPack()
-    bag.conect(address)
-    bag.set_pixel(0, 0, 'red')
+    pack = DotPack()
+    pack.conect(address)
+    pack.set_pixel(0, 0, 'red')
 
     get device address: 
         shell: bleak-lescan
+    
+    Coordinate:
+        https://learn.adafruit.com/adafruit-gfx-graphics-library/coordinate-system-and-units
     """
 
     _COLOR = {
@@ -123,14 +127,14 @@ class DotPack:
     def __getitem__(self, xy):
         """获取 xy 位置的颜色
 
-        eg: bag[0, 1]"""
+        eg: pack[0, 1]"""
         x, y = xy
         return self.get_pixel(x, y)
 
     def __setitem__(self, xy, value):
         """设置 xy 位置的颜色
 
-        eg: bag[0, 1] = (255, 0, 0)"""
+        eg: pack[0, 1] = (255, 0, 0)"""
         x, y = xy
         return self.set_pixel(x, y, value)  # set 会如何
         # return self.li[item]
@@ -183,18 +187,21 @@ class DotPack:
     def set_pixel(self, x, y, color, show=True):
         """设置 x, y 位置的颜色
 
-        eg: set_pixel(0, 1, 'red')"""
+        eg: set_pixel(1, 0, 'red')
+
+        coordinate: https://learn.adafruit.com/adafruit-gfx-graphics-library/coordinate-system-and-units
+        """
         # https://microbit-micropython.readthedocs.io/en/v1.0.1/display.html#microbit.display.set_pixel
         if type(color) == str:
             color = self._COLOR[color]
-        y, x = x, y  # x y 相反，与imagicharm保持一致
+        # y, x = x, y  # x y 相反，与imagicharm保持一致
 
         if self._is_local():
             self._img.putpixel((x, y), color)
             if show:
                 self.show_here(self._img)
         else:
-            # to bag
+            # to pack
             r, g, b = color
             self._execute(self._ledpanel.draw_point(r, g, b, x, y))
             # self._show_image(img, PILimage=PILimage)
@@ -203,7 +210,7 @@ class DotPack:
         """获取 x, y 位置的颜色
 
         eg: get_pixel(0, 1)"""
-        y, x = x, y
+        # y, x = x, y
         return self._img.getpixel((x, y))
 
     def set_color(self, color, show=True):
@@ -218,7 +225,7 @@ class DotPack:
         if self._is_local():
             self.show_here(self._img)
         else:
-            # to bag
+            # to pack
             r, g, b = color
             self._execute(self._ledpanel.fill_color(r, g, b))
             # self._show_image(img, PILimage=PILimage)
@@ -233,10 +240,14 @@ class DotPack:
         # im = Image.new(mode="RGB", size=(self.size, self.size))
         draw = ImageDraw.Draw(self._img)
 
+        if platform.system() == "Darwin" and font == "simhei":
+            font = "PingFang"
+        
         if font == "PingFang":
             if not offset_y:
                 offset_y = -3
 
+        print(font)
         image_font = ImageFont.truetype(font, self.size)
         draw.text((0, offset_y), character, font=image_font, fill=color)
 
@@ -335,7 +346,7 @@ class DotPack:
         if self._is_local():
             return self._show_here(img, PILimage=PILimage)
         else:
-            # to bag
+            # to pack
             self._show_image(img, PILimage=PILimage)
 
     def clear(self):
@@ -373,42 +384,42 @@ DotPack.set_background = DotPack.set_color
 class Animation:
     '''
     a = Animation()
-    make_unicorn(bag)
-    a.add_frame(bag)
-    make_heart(bag)
-    a.add_frame(bag)
-    a.show()  # a.show(to_bag=bag)
+    make_unicorn(pack)
+    a.add_frame(pack)
+    make_heart(pack)
+    a.add_frame(pack)
+    a.show()  # a.show(to_pack=pack)
     '''
     def __init__(self) -> None:
         self.frames = []  # 每个都是 PIL 图片
-        self._bag = DotPack()
+        self._pack = DotPack()
 
-    def add_frame(self, bag_instance, frame_name=None):
+    def add_frame(self, pack_instance, frame_name=None):
         if not frame_name:
-            frame_name = self._bag._generate_name()
-        self.frames.append((frame_name, bag_instance._img.copy()))  # 不然引用同个对象
+            frame_name = self._pack._generate_name()
+        self.frames.append((frame_name, pack_instance._img.copy()))  # 不然引用同个对象
 
-    def show(self, to_bag=None, optimize=False, duration=0.1, loop=0, **kwargs):
+    def show(self, to_pack=None, optimize=False, duration=0.1, loop=0, **kwargs):
         # duration , duration
-        if to_bag:
+        if to_pack:
             _frames = [frame for _, frame in self.frames]
-            _frames[0].save('to_bag.gif', save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
-            # to_bag.show('to_bag.gif', PILimage=False)
+            _frames[0].save('to_pack.gif', save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
+            # to_pack.show('to_pack.gif', PILimage=False)
             # todo 
             raise NotImplementedError
         else:
             for name, frame in self.frames:
-                self._bag.show(frame, PILimage=True)
+                self._pack.show(frame, PILimage=True)
                 time.sleep(duration)
 
-    def show_frame(self, frame_name, to_bag=None):
+    def show_frame(self, frame_name, to_pack=None):
         for name, frame in self.frames:
             if frame_name == name:
-                if to_bag:
-                    # to_bag.show(frame, PILimage=True)
+                if to_pack:
+                    # to_pack.show(frame, PILimage=True)
                     raise NotImplementedError
                 else:
-                    self._bag.show(frame, PILimage=True)
+                    self._pack.show(frame, PILimage=True)
                 return
 
     def remove_frame(self, frame_name):
@@ -419,9 +430,9 @@ class Animation:
 
     def save(self, name=None, resize=True, optimize=False, duration=1, loop=0, **kwargs):
         if not name:
-            name = self._bag._generate_name()
+            name = self._pack._generate_name()
         if resize:
-            _frames = [self._bag._resize_to_save(frame) for _, frame in self.frames]
+            _frames = [self._pack._resize_to_save(frame) for _, frame in self.frames]
         else: 
             _frames = [frame for _, frame in self.frames]
         _frames[0].save(f'{name}.gif', save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
@@ -433,7 +444,7 @@ class Animation:
         self.frames = self._resize_gif(im)
 
     def _resize_gif(self, im):
-        frames = [(self._bag._generate_name(), frame.copy().resize((self._bag.size, self._bag.size), Image.NEAREST).convert("RGB")) for frame in ImageSequence.Iterator(im)]
+        frames = [(self._pack._generate_name(), frame.copy().resize((self._pack.size, self._pack.size), Image.NEAREST).convert("RGB")) for frame in ImageSequence.Iterator(im)]
         return frames
 
     def clear(self):
@@ -441,22 +452,22 @@ class Animation:
 
 
 
-bag = DotPack()
-connect = bag.connect
-set_pixel = bag.set_pixel
-show = bag.show
-set_background = set_color = bag.set_background
-clear = bag.clear
-close = bag.close
-save = bag.save
-load = bag.load
-display_emoji = bag.display_emoji
+pack = DotPack()
+connect = pack.connect
+set_pixel = pack.set_pixel
+show = pack.show
+set_background = set_color = pack.set_background
+clear = pack.clear
+close = pack.close
+save = pack.save
+load = pack.load
+display_emoji = pack.display_emoji
 
 __all__ = [
     "DotPack",
     "LedBag",
     "Animation",
-    "bag",
+    "pack",
     "connect",
     "set_pixel",
     "show",
