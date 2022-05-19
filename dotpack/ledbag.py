@@ -56,7 +56,7 @@ class DotPack:
         "white": WHITE,
     }
 
-    def __init__(self, address="local", logger=None):
+    def __init__(self, address="local", logger=None, use_imagicharm_coordinate_system=True):
         # async -> sync
         self.__event_loop = asyncio.new_event_loop()
         self.__lock = threading.Lock()
@@ -70,6 +70,7 @@ class DotPack:
         self._img = Image.new(mode="RGB", size=(self.size, self.size))
         self._show_duration = 0.1
         self._show_scale = 20
+        self._use_imagicharm_coordinate_system = use_imagicharm_coordinate_system
 
         if logger is None:
             self.logger = loguru.logger
@@ -187,14 +188,17 @@ class DotPack:
     def set_pixel(self, x, y, color, show=True):
         """设置 x, y 位置的颜色
 
-        eg: set_pixel(1, 0, 'red')
+        eg: set_pixel(0, 1, 'red')
 
         coordinate: https://learn.adafruit.com/adafruit-gfx-graphics-library/coordinate-system-and-units
         """
         # https://microbit-micropython.readthedocs.io/en/v1.0.1/display.html#microbit.display.set_pixel
         if type(color) == str:
             color = self._COLOR[color]
-        # y, x = x, y  # x y 相反，与imagicharm保持一致
+        
+        if self._use_imagicharm_coordinate_system:
+            # 与 imagicharm 保持一致, x 行 y 列
+            y, x = x, y  # x y 与笛卡尔坐标系相反
 
         if self._is_local():
             self._img.putpixel((x, y), color)
@@ -210,7 +214,8 @@ class DotPack:
         """获取 x, y 位置的颜色
 
         eg: get_pixel(0, 1)"""
-        # y, x = x, y
+        if self._use_imagicharm_coordinate_system:
+            y, x = x, y
         return self._img.getpixel((x, y))
 
     def set_color(self, color, show=True):
