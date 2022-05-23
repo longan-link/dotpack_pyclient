@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['bleak==0.14.2', 'Pillow==9.0.1', 'ipythonblocks==1.9.0', 'loguru==0.6.0']
+requirements = ['bleak==0.14.2', 'Pillow==9.0.1', 'ipythonblocks==1.9.0', 'loguru==0.6.0', 'tqdm']
 
 setup_requirements = [
     'pytest-runner',

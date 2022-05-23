@@ -1,4 +1,5 @@
 import os
+import re
 import platform
 import time
 import uuid
@@ -12,7 +13,7 @@ from IPython import display
 from ipythonblocks import BlockGrid
 
 from .ledpanel import ledpanel
-
+from .microblocks_client import MicroblocksClient
 # ref imagiCharms https://imagilabs.com/app
 RED = R = (255, 0, 0)
 GREEN = G = (0, 255, 0)
@@ -27,6 +28,7 @@ WHITE = W = (255, 255, 255)
 
 base_path = os.path.dirname(os.path.realpath(__file__))
 
+# todo 使用 proxy 模式 https://github.com/faif/python-patterns/blob/master/patterns/structural/proxy.py
 
 class DotPack:
     """Class DotPack(16x16) encapsulates the DotPack communication.
@@ -64,9 +66,10 @@ class DotPack:
         self.__thread.start()
 
         self._ledpanel = None
+        self._microblocks_client = None
         self.type = "DotPack"  # ...
         self.size = 16
-        self.address = address
+        self.address = address.strip()
         self._img = Image.new(mode="RGB", size=(self.size, self.size))
         self._show_duration = 0.1
         self._show_scale = 20
@@ -95,6 +98,15 @@ class DotPack:
         else:
             return False
 
+    def _get_client_type(self, address):
+        # wifi
+        if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", address):
+            return "Microblocks_firmware"
+        
+        # Bluetooth
+        if re.match(r"(?:[0-9a-fA-F]:?){12}", address):
+            return "C_firmware"
+
     def _generate_name(self):
         return "_" + uuid.uuid4().hex[:8]
 
@@ -117,7 +129,11 @@ class DotPack:
 
     def _show_image(self, image, PILimage=True):
         # todo GIF
-        self._execute(self._ledpanel.upload_image(image))
+        if self._ledpanel:
+            self._execute(self._ledpanel.upload_image(image))
+
+        if self._microblocks_client:
+            self._microblocks_client.upload_and_show_image(image)
 
     def _show_here(self, img=None, PILimage=True):
         if img:
@@ -141,13 +157,20 @@ class DotPack:
         # return self.li[item]
 
     def connect(self, address=None):
+        # 根据 address 蓝牙地址还是wifi地址自动连接
         if address:
-            self.address = address
+            self.address = address.strip()
         if self._is_local():
             return
 
-        self._ledpanel = ledpanel(self.address)
-        self._execute(self._ledpanel.connect())
+        if self._get_client_type(self.address) == "Microblocks_firmware":
+            self._microblocks_client = MicroblocksClient(self.address)
+            self._microblocks_client.connect()
+
+        if self._get_client_type(self.address) == "C_firmware":
+            self._ledpanel = ledpanel(self.address)
+            self._execute(self._ledpanel.connect())
+
         print('connected!')
 
     def disconnect(self):
@@ -156,6 +179,9 @@ class DotPack:
             time.sleep(0.05)
             self._execute(self._ledpanel.disconnect())
             time.sleep(0.05)
+        
+        if self._microblocks_client:
+            self._microblocks_client.disconnect()
         
         with self.__lock:
             self.__event_loop.call_soon_threadsafe(self.__event_loop.stop)
@@ -204,7 +230,12 @@ class DotPack:
             self._img.putpixel((x, y), color)
             if show:
                 self.show_here(self._img)
-        else:
+                
+        if self._microblocks_client:
+            r, g, b = color
+            self._microblocks_client.draw_point(r, g, b, x, y)
+
+        if self._ledpanel:
             # to pack
             r, g, b = color
             self._execute(self._ledpanel.draw_point(r, g, b, x, y))
@@ -229,11 +260,14 @@ class DotPack:
 
         if self._is_local():
             self.show_here(self._img)
-        else:
+
+        if self._ledpanel:
             # to pack
             r, g, b = color
             self._execute(self._ledpanel.fill_color(r, g, b))
             # self._show_image(img, PILimage=PILimage)
+        if self._microblocks_client:
+            self._microblocks_client.set_background(color)
 
     def display_char_zh(self, character, color=RED, font="simhei", offset_y=0):
         """显示中文字符"""
@@ -252,7 +286,6 @@ class DotPack:
             if not offset_y:
                 offset_y = -3
 
-        print(font)
         image_font = ImageFont.truetype(font, self.size)
         draw.text((0, offset_y), character, font=image_font, fill=color)
 
@@ -273,6 +306,12 @@ class DotPack:
         BLE 速度很慢，暂时弃用这种特效
         todo 只传内容，不传图片
         """
+        if type(color) == str:
+            color = self._COLOR[color]
+            
+        if self._microblocks_client:
+            return self._microblocks_client.scroll_text(text, color)
+
         delta = 0
         if icon:
             delta = 25
@@ -299,6 +338,8 @@ class DotPack:
             self.show(cropped_im, True)
             # for j in range(400000):
             #    a = 0
+
+    # display_char
 
     def display_emoji(self, character, color=RED, font="emoji", offset_y=0):
         """显示 emoji 表情符"""
@@ -358,7 +399,11 @@ class DotPack:
         self._img = Image.new(mode="RGB", size=(self.size, self.size))
         if self._is_local():
             return self.show()
-        else:
+
+        if self._microblocks_client:
+            self._microblocks_client.clear()
+
+        if self._ledpanel:
             self._execute(self._ledpanel.clear())
 
     def set_brightness(self, brightness):
@@ -405,13 +450,18 @@ class Animation:
         self.frames.append((frame_name, pack_instance._img.copy()))  # 不然引用同个对象
 
     def show(self, to_pack=None, optimize=False, duration=0.1, loop=0, **kwargs):
-        # duration , duration
+        # duration
         if to_pack:
             _frames = [frame for _, frame in self.frames]
+            # todo show gif
             _frames[0].save('to_pack.gif', save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
-            # to_pack.show('to_pack.gif', PILimage=False)
-            # todo 
-            raise NotImplementedError
+    
+            if  to_pack._ledpanel:
+                # to_pack._ledpanel.upload_gif('to_pack.gif', PILimage=False)
+                # todo 
+                raise NotImplementedError
+            if to_pack._microblocks_client:
+                to_pack._microblocks_client.upload_gif('to_pack.gif')
         else:
             for name, frame in self.frames:
                 self._pack.show(frame, PILimage=True)
