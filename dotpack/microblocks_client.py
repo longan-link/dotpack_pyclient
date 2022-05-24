@@ -1,6 +1,9 @@
 import time
 import io
+from PIL import Image
 from websocket import create_connection
+from tqdm import tqdm
+
 
 class MicroblocksClient:
     def __init__(self, address=None, verbose=False):
@@ -125,15 +128,6 @@ class MicroblocksClient:
         '''
         cmd = f'displayBMPImage,{filename}'
         return self._send(cmd)
-    
-    def display_animation(self, name, pausing=100, loop=False):
-        '''
-        Text Protocol
-            displayAnimation,{filename},{pausing}
-            播放到最后一张
-        '''
-        cmd = f'displayAnimation,{name},{pausing},{loop}'
-        return self._send(cmd)
 
     def preview_image(self, pilimage):
         '''
@@ -174,34 +168,40 @@ class MicroblocksClient:
         cmd = f'deleteFile,{filename}'
         return self._send(cmd)
 
-    def upload_gif(self, filename, duration=0.1):
-        
+    def delete_all_images(self):
+        files = self.list_file_names()
+        for i in files:
+            if  ".bmp" in i.lower():
+                self.delete_file(i)
+
+
+    def upload_animation(self, name, frames, duration=0.1):
         '''
+        filename gif?
+
         实现
             不使用gif, 使用动态图片
-            只保留一份动图，在 gif 目录中的图片
-                每次都删除然后创建
     
-        index_list
-            [1,2,3] -> '1,2,3'
+        使用命名规则    animation-0.bmp,animation-1.bmp,animation-2.bmp
 
-        gif 目录里的图片 
-            使用命名规则    image1.bmp,image2.bmp,image3.bmp
-
-        
+        完成后删除删除最后一张
         '''
-        img = Image.open(filename)  # to_pack.gif
-        # frames = []
-        picture_frames = []
-        try:
-            while True:
-                # 不用 RGBA（白色底）， RGB 黑色底
-                new_frame = Image.new("RGB", img.size)  # todo 16x16
-                new_frame.paste(img, (0, 0))
-                picture_frames.append([new_frame, 1])
-                img.seek(img.tell() + 1)
 
-        except EOFError:
-            pass
-        return picture_frames
+        for index, img in enumerate(tqdm(frames)):
+            # pack._microblocks_client.delete_file(filename=f"SnowCrash-{index}.bmp")
+            self.upload_image(img, filename=f"{name}-{index}.bmp")
+        
+        # 删除最后一张，使之不连续
+        self.delete_file(filename=f"{name}-{index+1}.bmp")  # 404 是正常的
+
+        return True
+        # return picture_frames
     
+    def display_animation(self, name="animation", pausing=100, loop=False):
+        '''
+        Text Protocol
+            displayAnimation,{filename},{pausing}
+            播放到最后一张
+        '''
+        cmd = f'displayAnimation,{name},{pausing},{loop}'
+        return self._send(cmd)

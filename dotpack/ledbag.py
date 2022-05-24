@@ -221,25 +221,28 @@ class DotPack:
         # https://microbit-micropython.readthedocs.io/en/v1.0.1/display.html#microbit.display.set_pixel
         if type(color) == str:
             color = self._COLOR[color]
-        
+
         if self._use_imagicharm_coordinate_system:
             # 与 imagicharm 保持一致, x 行 y 列
             y, x = x, y  # x y 与笛卡尔坐标系相反
 
+        self._img.putpixel((x, y), color)
+
         if self._is_local():
-            self._img.putpixel((x, y), color)
             if show:
                 self.show_here(self._img)
                 
         if self._microblocks_client:
-            r, g, b = color
-            self._microblocks_client.draw_point(r, g, b, x, y)
+            if show:
+                r, g, b = color
+                self._microblocks_client.draw_point(r, g, b, x, y)
 
         if self._ledpanel:
             # to pack
-            r, g, b = color
-            self._execute(self._ledpanel.draw_point(r, g, b, x, y))
-            # self._show_image(img, PILimage=PILimage)
+            if show:
+                r, g, b = color
+                self._execute(self._ledpanel.draw_point(r, g, b, x, y))
+                # self._show_image(img, PILimage=PILimage)
 
     def get_pixel(self, x, y):
         """获取 x, y 位置的颜色
@@ -249,7 +252,7 @@ class DotPack:
             y, x = x, y
         return self._img.getpixel((x, y))
 
-    def set_color(self, color, show=True):
+    def set_color(self, color):
         """设置背景颜色"""
         if type(color) == str:
             color = self._COLOR[color]
@@ -308,7 +311,7 @@ class DotPack:
         """
         if type(color) == str:
             color = self._COLOR[color]
-            
+
         if self._microblocks_client:
             return self._microblocks_client.scroll_text(text, color)
 
@@ -449,19 +452,27 @@ class Animation:
             frame_name = self._pack._generate_name()
         self.frames.append((frame_name, pack_instance._img.copy()))  # 不然引用同个对象
 
-    def show(self, to_pack=None, optimize=False, duration=0.1, loop=0, **kwargs):
+    def show(self, to_pack=None, filename="animation", optimize=False, duration=0.1, loop=0, **kwargs):
         # duration
         if to_pack:
             _frames = [frame for _, frame in self.frames]
             # todo show gif
-            _frames[0].save('to_pack.gif', save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
+            gif_filename = f'{filename}.gif'
+            _frames[0].save(gif_filename, save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
     
-            if  to_pack._ledpanel:
+            if to_pack._ledpanel:
                 # to_pack._ledpanel.upload_gif('to_pack.gif', PILimage=False)
                 # todo 
                 raise NotImplementedError
+
             if to_pack._microblocks_client:
-                to_pack._microblocks_client.upload_gif('to_pack.gif')
+                if loop == 0:
+                    loop = True
+                else:
+                    loop = False
+                    
+                to_pack._microblocks_client.upload_animation(filename, _frames)
+                to_pack._microblocks_client.display_animation(filename, pausing=duration, loop=loop)
         else:
             for name, frame in self.frames:
                 self._pack.show(frame, PILimage=True)
