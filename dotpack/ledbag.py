@@ -104,7 +104,7 @@ class DotPack:
             return "Microblocks_firmware"
         
         # Bluetooth
-        if re.match(r"(?:[0-9a-fA-F]:?){12}", address):
+        if re.match(r"(?:[0-9a-fA-F]:?){12}", address) or len(self.address)==36: # MacOS
             return "C_firmware"
 
     def _generate_name(self):
@@ -166,13 +166,18 @@ class DotPack:
         if self._get_client_type(self.address) == "Microblocks_firmware":
             self._microblocks_client = MicroblocksClient(self.address)
             self._microblocks_client.connect()
+            print('connected!')
+            return True
+
 
         if self._get_client_type(self.address) == "C_firmware":
             self._ledpanel = ledpanel(self.address)
             self._execute(self._ledpanel.connect())
+            print('connected!')
+            return True
 
-        print('connected!')
 
+        
     def disconnect(self):
         # print('disconnect')
         if self._ledpanel:

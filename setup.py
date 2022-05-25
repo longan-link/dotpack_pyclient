@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['bleak==0.14.2', 'Pillow==9.0.1', 'ipythonblocks==1.9.0', 'loguru==0.6.0', 'tqdm']
+requirements = ['bleak==0.14.3', 'Pillow==9.0.1', 'ipythonblocks==1.9.0', 'loguru==0.6.0', 'tqdm==4.64.0', 'websocket-client==1.3.2']
 
 setup_requirements = [
     'pytest-runner',
@@ -47,6 +47,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/longan-link/dotpack_pyclient',
-    version='0.2.1',
+    version='0.3.0',
     zip_safe=False,
 )
