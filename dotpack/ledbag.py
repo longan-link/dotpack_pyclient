@@ -15,6 +15,7 @@ from pynput import keyboard
 
 from .ledpanel import DotPackClient
 from .microblocks_client import MicroblocksClient
+from .utils import only_device
 
 # ref imagiCharms https://imagilabs.com/app
 RED = R = (255, 0, 0)
@@ -421,6 +422,7 @@ class DotPack:
     # def set_brightness(self, brightness):
     #     self._execute(self._ledpanel.set_brightness(brightness))
 
+    @only_device
     def set_mode(self, name):
         """设置模式/特效 (仅在硬件上运行, 不支持模拟器)
         eg: fire, rainbow, snow, matrix, fireflies, arrows, noise_ocean, balls...
