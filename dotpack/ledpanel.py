@@ -3,6 +3,7 @@ import asyncio
 from bleak import BleakClient
 from PIL import Image
 import uuid
+from tqdm import tqdm
 
 MODEL_NBR_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 CHARACTERISTIC_UUID_RX ="6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -10,18 +11,12 @@ CHARACTERISTIC_UUID_TX = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 class DotPackClient:
 
-    client=None
-    err = False
-    read_end = False
-    over_upload = False
-    rep_data = []
-    get_timestamp_uuid = ""
-    Order_ID = ""
-    previous_data = bytearray ()
-    
     def __init__(self, address):
         self.client= BleakClient(address)
         self._q = asyncio.Queue()
+        self.err = False
+        self.read_end = False
+        self.printlog = True
 
     async def __anext__(self):
         await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
@@ -63,9 +58,13 @@ class DotPackClient:
         if OrderID == self.get_timestamp_uuid:
             rep = Orderlist[2:-1]
             self.rep_data = rep
-            print(rep)
+            if(rep != [] and self.printlog == True):
+                rep = ','.join(rep)
+                print(rep)
+            self.printlog = True
         else:
             print("OrderID-ERROR")
+            self.printlog = True
 
     async def _write_and_read(self, data):
         self.err = False
@@ -171,7 +170,7 @@ class DotPackClient:
 
 
     async def upload_and_show_animation(self, name, frame_quantity, frames):   #上传并播放动图 (文件名，总帧数，帧数据)
-        for index,img in enumerate(frames):
+        for index,img in enumerate(tqdm(frames)):
             self._upload_image(img)                            #上传图片到开发板（不带保存）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         #上传图片到板子
             name = str(frame_quantity) + "_" + name            #帧数加文件名 例：11_giftest
             self.save_gif(name,index)                          #将上传的图片进行保存 (整个GIF的文件名，当前为第几帧(单张图片的名字))
@@ -322,7 +321,7 @@ class DotPackClient:
         data=bytearray("$6 20|FS",'utf-8')
         await self._write_and_read(data)
 
-    async def display_image(self):    #显示隐式上传的图片（buffer中的数据）前提是使用过Implicitly_get_image_data命令，缓冲区有数据
+    async def display_Implicitly_image(self):    #显示隐式上传的图片（buffer中的数据）前提是使用过Implicitly_get_image_data命令，缓冲区有数据
         data=bytearray("$5 7;",'utf-8')
         await self._write_and_read(data)
 
@@ -419,7 +418,7 @@ class DotPackClient:
         data = bytearray("$6 28|%s"%(text),'utf-8')
         await self._write_and_read(data)
 
-    async def textcolormode(self,mode: int): #设置文字颜色模式
+    async def text_colormode(self,mode: int): #设置文字颜色模式
         data = bytearray("$13 11 %d"%(mode),'utf-8') # 0 white font    1 gradient font    2 multicolor font
         await self._write_and_read(data)
         
@@ -459,27 +458,36 @@ class DotPackClient:
         data=bytearray("$15 %d;"%(speed),'utf-8')
         await self._write_and_read(data)
 
-    async def save_gif(self,gifname:str,picname:str):  #保存GIF（保存指令，非上传指令）
+    async def save_gif(self,gifname:str,picname:str):  #保存GIF（保存指令，非上传指令） *
         data = bytearray("$6 23|FS %s|%s"%(gifname,picname),'utf-8')
         await self._write_and_read(data)
 
-    async def display_gif(self,s:int,p:int,filename:str):  #播放GIF
-        data = bytearray("$6 24|FS %d %d|%s"%(s,p,filename),'utf-8')
+    # async def display_gif(self,s:int,p:int,filename:str):  #播放GIF *
+    #     data = bytearray("$6 24|FS %d %d|%s"%(s,p,filename),'utf-8')
+    #     await self._write_and_read(data)
+
+#############################
+
+    async def display_gif(self,s:int,filename:str):  #播放GIF *
+        data = bytearray("$6 24|FS %d|%s"%(s,filename),'utf-8')
         await self._write_and_read(data)
 
-    async def display_sys_animation(self,p:int):      #播放系统中的编程进去的动图，并非上传到flash上的GIF
+#############################
+
+
+    async def display_sys_animation(self,p:int):      #播放系统中的编程进去的动图，并非上传到flash上的GIF *
         data = bytearray("$5 9 %d"%p,'utf-8')
         await self._write_and_read(data)
 
-    async def get_gif_quantity(self,p:int,gifname:str):   #获取保存到flash中的GIF帧数（用于上传完成后帧数的校对）
+    async def get_gif_quantity(self,p:int,gifname:str):   #获取保存到flash中的GIF帧数（用于上传完成后帧数的校对）*
         data = bytearray("$6 26|FS %d|%s"%(p,gifname),'utf-8')
         await self._write_and_read(data)
 
-    async def delete_gif(self,p:int,filename:str):     #删除保存在flash上的GIF动图
-        data = bytearray("$6 25|FS %d|%s"%(p,filename),'utf-8')
+    async def delete_gif(self,filename:str):     #删除保存在flash上的GIF动图 *
+        data = bytearray("$6 25|FS %s"%(filename),'utf-8')
         await self._write_and_read(data)
 
-    async def renameGIF(self,olefilename:str,newfilename:str):  #重命名GIF动图
+    async def renameGIF(self,olefilename:str,newfilename:str):  #重命名GIF动图 *
         data = bytearray("$6 27|FS %s|%s"%(olefilename,newfilename),'utf-8')
         await self._write_and_read(data)
 
@@ -511,3 +519,19 @@ class DotPackClient:
         #4、随机特效模式（例：$6 35|4）
         data = bytearray("$6 35|%d %s"%(mode,name),'utf-8')
         await self._write_and_read(data)
+
+    async def upload_animation(self,name,frames):
+        
+        # 要求服务端清理
+        self.printlog = False
+        await self.delete_gif(name)
+        self.printlog = False
+        await self.display_sys_animation(1)
+
+        i = -1
+        for index, frame in (tqdm(frames)):
+            i += 1
+            await self._upload_image(frame)
+            gifp = name
+            picn = str(i)
+            await self.save_gif(gifp,picn)

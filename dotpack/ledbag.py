@@ -11,8 +11,9 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageSequence  # pillow
 from IPython import display
 from ipythonblocks import BlockGrid
+from pynput import keyboard
 
-from .ledpanel import ledpanel
+from .ledpanel import DotPackClient
 from .microblocks_client import MicroblocksClient
 # ref imagiCharms https://imagilabs.com/app
 RED = R = (255, 0, 0)
@@ -130,7 +131,7 @@ class DotPack:
     def _show_image(self, image, PILimage=True):
         # todo GIF
         if self._ledpanel:
-            self._execute(self._ledpanel.upload_image(image))
+            self._execute(self._ledpanel.upload_and_show_image(image))
 
         if self._microblocks_client:
             self._microblocks_client.upload_and_show_image(image)
@@ -171,7 +172,7 @@ class DotPack:
 
 
         if self._get_client_type(self.address) == "C_firmware":
-            self._ledpanel = ledpanel(self.address)
+            self._ledpanel = DotPackClient(self.address)
             self._execute(self._ledpanel.connect())
             print('connected!')
             return True
@@ -272,7 +273,7 @@ class DotPack:
         if self._ledpanel:
             # to pack
             r, g, b = color
-            self._execute(self._ledpanel.fill_color(r, g, b))
+            self._execute(self._ledpanel.set_background(r, g, b))
             # self._show_image(img, PILimage=PILimage)
         if self._microblocks_client:
             self._microblocks_client.set_background(color)
@@ -414,14 +415,14 @@ class DotPack:
         if self._ledpanel:
             self._execute(self._ledpanel.clear())
 
-    def set_brightness(self, brightness):
-        self._execute(self._ledpanel.set_brightness(brightness))
+    # def set_brightness(self, brightness):
+    #     self._execute(self._ledpanel.set_brightness(brightness))
 
     def set_mode(self, name):
         """设置模式/特效 (仅在硬件上运行, 不支持模拟器)
         eg: fire, rainbow, snow, matrix, fireflies, arrows, noise_ocean, balls...
         """
-        self._execute(self._ledpanel.set_mode(name))
+        self._execute(self._ledpanel.set_effect_mode(name))
 
     def screen_on(self):
         """打开屏幕 (仅在硬件上运行, 不支持模拟器)"""
@@ -431,12 +432,200 @@ class DotPack:
         """关闭屏幕 (仅在硬件上运行, 不支持模拟器)"""
         self._execute(self._ledpanel.off())
 
+    def set_brightness(self,brightness):
+        """设置屏幕亮度"""
+        self._execute(self._ledpanel.set_brightness(brightness))
+
+    def upload_and_show_image(self,pilimage):
+        """上传并显示图像"""
+        self._execute(self._ledpanel.upload_and_show_image(pilimage))
+
+    def set_effect_mode(self,mode):
+        """设置效果切换模式
+        eg：nextMode:下一个特效、prevMode:上一个特效、auto：自动切换
+        """
+        self._execute(self._ledpanel.set_effect_change_mode(mode))
+
+    def get_images_list(self):
+        """获取储存在板子中的图像列表"""
+        self._execute(self._ledpanel.list_images_names())
+
+    def show_function_icon(self,icon):
+        """显示功能图标
+        eg：(范围：0-18)
+        """
+        self._execute(self._ledpanel.function_icon(icon))
+    
+    def save_image(self,name):
+        """保存当前显示在点阵屏上的图像"""
+        self._execute(self._ledpanel.save_current_images(name))
+
+    def delete_image(self,name):
+        """删除存在板子中的图像"""
+        self._execute(self._ledpanel.delete_images(name))
+
+    def display_image(self,name):
+        """显示存在板子中的图像"""
+        self._execute(self._ledpanel.display_images(name))
+
+    def image_rename(self,oldname,newname):
+        """修改存在板子中的图像名称"""
+        self._execute(self._ledpanel.image_rename(oldname,newname))
+
+    def delete_all_images(self):
+        """删除所有保存在板子上的图像"""
+        self._execute(self._ledpanel.delete_all_images())
+
+    def Implicitly_get_image_data(self,name):
+        """隐式获取上传的图片数据"""
+        self._execute(self._ledpanel.Implicitly_get_image_data(name))
+
+    def display_Implicitly_image(self):
+        """显示隐式获取到的图片（在缓存中）"""
+        self._execute(self._ledpanel.display_Implicitly_image())
+
+    def firmware_ver(self):
+        """获取当前的版本信息"""
+        self._execute(self._ledpanel.firmware_ver())
+
+    def get_led_image_data(self):
+        """获取当前显示在点阵屏上的颜色数据"""
+        self._execute(self._ledpanel.led_image_data())
+
+    def run_text_on_effects(self,text):
+        """将文本显示在特效模式上"""
+        self._execute(self._ledpanel.run_text_on_effects(text))
+
+    def scroll_text(self,text):
+        """显示滚动文本"""
+        self._execute(self._ledpanel.scroll_text(text))
+    
+    def text_colormode(self,mode):
+        """设置颜色模式
+        eg：0 white font    1 gradient font    2 multicolor font
+        """
+        self._execute(self._ledpanel.text_colormode(mode))
+
+    def text_color(self,color):
+        """设置字体颜色"""
+        self._execute(self._ledpanel.text_color(color))
+
+    def crawl_speed(self,speed):
+        """设置文本滚动速度"""
+        self._execute(self._ledpanel.crawl_speed(speed))
+
+    def play_text_once(self,text):
+        """显示滚动一次的文本"""
+        self._execute(self._ledpanel.play_text_once(text))
+
+    def game_mode(self,mode):
+        """选择游戏模式
+        eg：选择游戏 - (1:迷宫，2：贪吃蛇，3：俄罗斯方块，4：打砖块)
+            游戏操作 - (10：向上移动，11:向右移动，12：向下移动，13：向左移动，14：OK键)
+        """
+        self._execute(self._ledpanel.game_mode(mode))
+
+    def game_paused(self):
+        """暂停游戏"""
+        self._execute(self._ledpanel.game_paused())
+
+    def continue_game(self):
+        """开始/继续游戏"""
+        self._execute(self._ledpanel.continue_game())
+        
+    def set_game_speed(self,speed):
+        """设置游戏速度"""
+        self._execute(self._ledpanel.set_speed(speed))
+
+    def get_flash_size(self):
+        """获取板子的内存情况
+        eg：显示总内存容量和已使用的容量
+        """
+        self._execute(self._ledpanel.flash_size())
+    
+    def get_folder_directory(self,name):
+        """获取文件夹下的所有文件名"""
+        self._execute(self._ledpanel.folder_directory(name))
+
+    def get_dirname(self,name):
+        """获取文件夹中文件夹的名字"""
+        self._execute(self._ledpanel.dirname())
+
+    def delete_dir(self,name):
+        """删除文件夹（文件夹必须为空才可删除）"""
+        self._execute(self._ledpanel.delete_dir())
+
+    def recovery_mode(self):
+        """恢复断电前的上一次效果或动图或图片"""
+        self._execute(self._ledpanel.recovery_mode())
+
+    def set_boot_mode(self,mode,name):
+        """
+        设置开机模式
+        1、图片模式 (例：$6 35|1 图像文件名)
+        2、动图模式（例：$6 35|2 动图文件名）
+        3、指定特效模式（此设置需要在选定好的特效下发送指令，即可设置当前显示的特效为开机画面 例：$6 35|3）
+        4、随机特效模式（例：$6 35|4）
+        """
+        self._execute(self._ledpanel.set_boot_mode(mode,name))
+
+    def recovery_mode(self):
+        """恢复断电前的模式"""
+        self._execute(self._ledpanel.recovery_mode())
+
+    def _update_animation(self,name,frames):
+        '''上传并保存动图'''
+        self._execute(self._ledpanel.upload_animation(name,frames))
+
+    def display_gif(self,speed,name):
+        """播放存在板子中的动图"""
+        self._execute(self._ledpanel.display_gif(speed,name))
+
+    def get_gif_list(self):
+        """获取存储在板子中的动图列表"""
+        self._execute(self._ledpanel.dirname("16p16GIF"))
+
+    def delete_gif(self,name):
+        """删除存储在板子中的动图"""
+        self._execute(self._ledpanel.delete_gif(name))
+
+    def rename_gif(self,oldname,newname):
+        """重命名存储在板子中的动图名称"""
+        self._execute(self._ledpanel.renameGIF(oldname,newname))
+
     def close(self):
         self.disconnect()
+
+    def keyboardListener(self):
+        with keyboard.Listener(
+                on_press=self.on_press,
+                # on_release=self.on_release
+                ) as listener:
+            listener.join()
+
+    def on_press(self,key):
+        if key == keyboard.Key.esc:
+            # Stop listener
+            return False
+        elif key == keyboard.Key.up:
+            self.game_mode(10)
+        elif key == keyboard.Key.down:
+            self.game_mode(12)
+        elif key == keyboard.Key.left:
+            self.game_mode(13)
+        elif key == keyboard.Key.right:
+            self.game_mode(11)
+        elif key == keyboard.Key.alt_l:
+            self.continue_game()
+        elif key == keyboard.Key.alt_r:
+            self.game_paused()
+
+
 
 
 LedBag = DotPack
 DotPack.set_background = DotPack.set_color
+
 
 
 class Animation:
@@ -466,9 +655,8 @@ class Animation:
             _frames[0].save(gif_filename, save_all=True, append_images=_frames[1:], optimize=optimize, duration=duration*1000, loop=loop)
     
             if to_pack._ledpanel:
-                # to_pack._ledpanel.upload_gif('to_pack.gif', PILimage=False)
-                # todo 
-                raise NotImplementedError
+                to_pack._update_animation(filename,self.frames)
+                to_pack.display_gif(1,filename)
 
             if to_pack._microblocks_client:
                 if loop == 0:
@@ -485,10 +673,11 @@ class Animation:
 
     def show_frame(self, frame_name, to_pack=None):
         for name, frame in self.frames:
+            print(name)
             if frame_name == name:
                 if to_pack:
-                    # to_pack.show(frame, PILimage=True)
-                    raise NotImplementedError
+                    to_pack.show(frame, PILimage=True)
+                    #raise NotImplementedError
                 else:
                     self._pack.show(frame, PILimage=True)
                 return
@@ -520,6 +709,18 @@ class Animation:
 
     def clear(self):
         self.frames = []
+
+    def show_animation(self,speed,name,to_pack=None):
+        to_pack.display_gif(speed,name)
+
+    def get_animation_list(self,to_pack=None):
+        to_pack.get_gif_list()
+        
+    def delete_animation(self,file_name=None,to_pack = None):
+        to_pack.delete_gif(file_name)
+
+    def rename_animation(self,oldname,newname,to_pack = None):
+        to_pack.rename_gif(oldname,newname)
 
 
 
