@@ -33,3 +33,7 @@ API 与 [LedBag](https://adapter.codelab.club/extension_guide/ledbag/) 基本一
 * [函数](https://docs.google.com/presentation/d/1hbEP77xLO4Qwlb3KaJl60kIuzuny5NgK8U--cvqiwDo/edit?usp=sharing)
 * [模块与对象简介](https://docs.google.com/presentation/d/1v0jtFN7bOD-Ys1bSoSIYzeQVUdnmI_BhFk7g9e3O-Xs/edit?usp=sharing)
 * [数据结构--将东西放在一起](https://docs.google.com/presentation/d/1Bc06m8_pq_1lGjm5s9-B9OjxjtCymaWBZ5syOeiKxfk/edit?usp=sharing)
+
+# 开发
+提交前，请使用 [black](https://github.com/psf/black) 统一代码格式
+
