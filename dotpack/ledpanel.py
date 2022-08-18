@@ -90,6 +90,14 @@ class DotPackClient:
         data = bytearray("$1 3;", "utf-8")
         await self._write_and_read(data)
 
+    async def get_mtu_value(self):  # 获取当前蓝牙的MTU大小
+        data = bytearray("$1 4;", "utf-8")
+        await self._write_and_read(data)
+
+    async def get_ble_mac(self):  # 获取蓝牙MAC地址
+        data = bytearray("$1 5;", "utf-8")
+        await self._write_and_read(data)
+
     async def set_brightness(self, brightness):  # 设置背光亮度（0-255）
         # brightness >=0 <=255
         if brightness >= 0 and brightness <= 255:

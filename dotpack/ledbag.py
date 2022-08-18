@@ -577,6 +577,14 @@ class DotPack:
         """恢复断电前的模式"""
         self._execute(self._ledpanel.recovery_mode())
 
+    def get_blemtu(self):
+        """获取当前蓝牙的MTU大小"""
+        self._execute(self._ledpanel.get_mtu_value())
+
+    def get_blemac(self):
+        """获取书包的BLE地址"""
+        self._execute(self._ledpanel.get_ble_mac())
+
     def _update_animation(self, name, frames):
         """上传并保存动图"""
         self._execute(self._ledpanel.upload_animation(name, frames))
