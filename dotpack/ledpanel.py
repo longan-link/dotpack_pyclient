@@ -58,7 +58,7 @@ class DotPackClient:
         if OrderID == self.get_timestamp_uuid:
             rep = Orderlist[2:-1]
             self.rep_data = rep
-            if(rep != [] and self.printlog == True):
+            if(rep != None and self.printlog == True):
                 rep = ','.join(rep)
                 print(rep)
             self.printlog = True
@@ -308,7 +308,7 @@ class DotPackClient:
         data=bytearray("$6 18|FS %s|%s"%(olefilename,newfilename),'utf-8')
         await self._write_and_read(data)
 
-    async def Implicitly_get_image_data(self, filename:str):  #隐式获取图像数据（不显示在点阵屏上）
+    async def implicitly_get_image_data(self, filename:str):  #隐式获取图像数据（不显示在点阵屏上）
         data=bytearray("$6 19|FS %s"%(filename),'utf-8')
         await self._write_and_read(data)
         if(self.err == False):
@@ -458,7 +458,7 @@ class DotPackClient:
         data=bytearray("$15 %d;"%(speed),'utf-8')
         await self._write_and_read(data)
 
-    async def save_gif(self,gifname:str,picname:str):  #保存GIF（保存指令，非上传指令） *
+    async def _save_gif(self,gifname:str,picname:str):  #保存GIF（保存指令，非上传指令） *
         data = bytearray("$6 23|FS %s|%s"%(gifname,picname),'utf-8')
         await self._write_and_read(data)
 
@@ -475,7 +475,7 @@ class DotPackClient:
 #############################
 
 
-    async def display_sys_animation(self,p:int):      #播放系统中的编程进去的动图，并非上传到flash上的GIF *
+    async def _display_sys_animation(self,p:int):      #播放系统中的编程进去的动图，并非上传到flash上的GIF *
         data = bytearray("$5 9 %d"%p,'utf-8')
         await self._write_and_read(data)
 
@@ -526,7 +526,7 @@ class DotPackClient:
         self.printlog = False
         await self.delete_gif(name)
         self.printlog = False
-        await self.display_sys_animation(1)
+        await self._display_sys_animation(1)
 
         i = -1
         for index, frame in (tqdm(frames)):
@@ -534,4 +534,4 @@ class DotPackClient:
             await self._upload_image(frame)
             gifp = name
             picn = str(i)
-            await self.save_gif(gifp,picn)
+            await self._save_gif(gifp,picn)

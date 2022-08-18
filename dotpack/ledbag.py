@@ -11,7 +11,6 @@ import threading
 from PIL import Image, ImageDraw, ImageFont, ImageSequence  # pillow
 from IPython import display
 from ipythonblocks import BlockGrid
-from pynput import keyboard
 
 from .ledpanel import DotPackClient
 from .microblocks_client import MicroblocksClient
@@ -481,9 +480,9 @@ class DotPack:
         """删除所有保存在板子上的图像"""
         self._execute(self._ledpanel.delete_all_images())
 
-    def Implicitly_get_image_data(self, name):
+    def implicitly_get_image_data(self, name):
         """隐式获取上传的图片数据"""
-        self._execute(self._ledpanel.Implicitly_get_image_data(name))
+        self._execute(self._ledpanel.implicitly_get_image_data(name))
 
     def display_Implicitly_image(self):
         """显示隐式获取到的图片（在缓存中）"""
@@ -554,11 +553,11 @@ class DotPack:
 
     def get_dirname(self, name):
         """获取文件夹中文件夹的名字"""
-        self._execute(self._ledpanel.dirname())
+        self._execute(self._ledpanel.dirname(name))
 
     def delete_dir(self, name):
         """删除文件夹（文件夹必须为空才可删除）"""
-        self._execute(self._ledpanel.delete_dir())
+        self._execute(self._ledpanel.delete_dir(name))
 
     def recovery_mode(self):
         """恢复断电前的上一次效果或动图或图片"""
@@ -582,48 +581,24 @@ class DotPack:
         """上传并保存动图"""
         self._execute(self._ledpanel.upload_animation(name, frames))
 
-    def display_gif(self, speed, name):
+    def _display_gif(self, speed, name):
         """播放存在板子中的动图"""
         self._execute(self._ledpanel.display_gif(speed, name))
 
-    def get_gif_list(self):
+    def _get_gif_list(self):
         """获取存储在板子中的动图列表"""
         self._execute(self._ledpanel.dirname("16p16GIF"))
 
-    def delete_gif(self, name):
+    def _delete_gif(self, name):
         """删除存储在板子中的动图"""
         self._execute(self._ledpanel.delete_gif(name))
 
-    def rename_gif(self, oldname, newname):
+    def _rename_gif(self, oldname, newname):
         """重命名存储在板子中的动图名称"""
         self._execute(self._ledpanel.renameGIF(oldname, newname))
 
     def close(self):
         self.disconnect()
-
-    def keyboardListener(self):
-        with keyboard.Listener(
-            on_press=self.on_press,
-            # on_release=self.on_release
-        ) as listener:
-            listener.join()
-
-    def on_press(self, key):
-        if key == keyboard.Key.esc:
-            # Stop listener
-            return False
-        elif key == keyboard.Key.up:
-            self.game_mode(10)
-        elif key == keyboard.Key.down:
-            self.game_mode(12)
-        elif key == keyboard.Key.left:
-            self.game_mode(13)
-        elif key == keyboard.Key.right:
-            self.game_mode(11)
-        elif key == keyboard.Key.alt_l:
-            self.continue_game()
-        elif key == keyboard.Key.alt_r:
-            self.game_paused()
 
 
 LedBag = DotPack
@@ -674,7 +649,7 @@ class Animation:
 
             if to_pack._ledpanel:
                 to_pack._update_animation(filename, self.frames)
-                to_pack.display_gif(1, filename)
+                to_pack._display_gif(1, filename)
 
             if to_pack._microblocks_client:
                 if loop == 0:
@@ -747,16 +722,16 @@ class Animation:
         self.frames = []
 
     def show_animation(self, speed, name, to_pack=None):
-        to_pack.display_gif(speed, name)
+        to_pack._display_gif(speed, name)
 
     def get_animation_list(self, to_pack=None):
-        to_pack.get_gif_list()
+        to_pack._get_gif_list()
 
     def delete_animation(self, file_name=None, to_pack=None):
-        to_pack.delete_gif(file_name)
+        to_pack._delete_gif(file_name)
 
     def rename_animation(self, oldname, newname, to_pack=None):
-        to_pack.rename_gif(oldname, newname)
+        to_pack._rename_gif(oldname, newname)
 
 
 pack = DotPack()
