@@ -58,7 +58,7 @@ class DotPackClient:
         if OrderID == self.get_timestamp_uuid:
             rep = Orderlist[2:-1]
             self.rep_data = rep
-            if(rep != None and self.printlog == True):
+            if(rep != [] and self.printlog == True):
                 rep = ','.join(rep)
                 print(rep)
             self.printlog = True
