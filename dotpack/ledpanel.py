@@ -14,9 +14,9 @@ class DotPackClient:
     def __init__(self, address):
         self.client = BleakClient(address)
         self._q = asyncio.Queue()
-        self.err = False
-        self.read_end = False
-        self.printlog = True
+        self._err = False
+        self._read_end = False
+        self._printlog = True
 
     async def __anext__(self):
         await self.client.stop_notify(CHARACTERISTIC_UUID_TX)
@@ -27,10 +27,10 @@ class DotPackClient:
         OrderID = rep[-8:]
         OrderID = str(OrderID).split("bytearray(b'")[1].split("')")[0]
         if OrderID == self.get_timestamp_uuid:
-            self.read_end = True
+            self._read_end = True
             self.previous_data = self.previous_data + rep
         else:
-            self.read_end = False
+            self._read_end = False
             self.previous_data = self.previous_data + rep
 
     async def connect(self):
@@ -54,27 +54,27 @@ class DotPackClient:
         Orderlist = Orderlist.split(",")
         OrderID = Orderlist[-1]
         if Orderlist[1:2] == ["ERR"]:
-            self.err = True
+            self._err = True
         if OrderID == self.get_timestamp_uuid:
             rep = Orderlist[2:-1]
             self.rep_data = rep
-            if rep != [] and self.printlog == True:
+            if rep != [] and self._printlog == True:
                 rep = ",".join(rep)
                 print(rep)
-            self.printlog = True
+            self._printlog = True
         else:
             print("OrderID-ERROR")
-            self.printlog = True
+            self._printlog = True
 
     async def _write_and_read(self, data):
-        self.err = False
-        self.read_end = False
+        self._err = False
+        self._read_end = False
         self.previous_data = bytearray()
         self.get_timestamp_uuid = str(uuid.uuid4().hex[:8])
         self.get_timestamp_uuid = self.get_timestamp_uuid.replace("-", "")
         data = bytearray(self.get_timestamp_uuid, "utf-8") + data
         await self.client.write_gatt_char(CHARACTERISTIC_UUID_RX, data, response=True)
-        while self.read_end == False:
+        while self._read_end == False:
             await asyncio.sleep(0.01)
         return self._UUID_Check(self.previous_data)
 
@@ -172,26 +172,9 @@ class DotPackClient:
             bufferall[y] = bufferline
 
         for i in range(16):
-            self.printlog = False
+            self._printlog = False
             data = bytearray(bufferall[i], "utf-8")
             await self._write_and_read(data)
-
-    async def upload_and_show_animation(
-        self, name, frame_quantity, frames
-    ):  # 上传并播放动图 (文件名，总帧数，帧数据)
-        for index, img in enumerate(tqdm(frames)):
-            self._upload_image(
-                img
-            )  # 上传图片到开发板（不带保存）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         #上传图片到板子
-            name = str(frame_quantity) + "_" + name  # 帧数加文件名 例：11_giftest
-            self.save_gif(name, index)  # 将上传的图片进行保存 (整个GIF的文件名，当前为第几帧(单张图片的名字))
-        name = str(frame_quantity) + "_" + name
-        await self.get_gif_quantity(frame_quantity, name)  # 校对帧数（获取上传后文件夹下的帧数）
-        if self.rep_data == ["Proofreading success"]:  # 判断校对是否完成
-            await self.display_gif(1, frame_quantity, name)  # 如果完成播放
-        else:
-            return "Framerate check failed!!! Please upload again!"  # 如果失败返回提示信息
-        return "Animation upload complete"  # GIF上传完成
 
     async def set_effect_mode(self, mode):  # 播放自带的动态效果
         if mode == "black":
@@ -317,10 +300,10 @@ class DotPackClient:
         data = bytearray("$6 18|FS %s|%s" % (olefilename, newfilename), "utf-8")
         await self._write_and_read(data)
 
-    async def Implicitly_get_image_data(self, filename: str):  # 隐式获取图像数据（不显示在点阵屏上）
+    async def implicitly_get_image_data(self, filename: str):  # 隐式获取图像数据（不显示在点阵屏上）
         data = bytearray("$6 19|FS %s" % (filename), "utf-8")
         await self._write_and_read(data)
-        if self.err == False:
+        if self._err == False:
             for i in range(15):
                 data = bytearray("$18 0;", "utf-8")
                 await self._write_and_read(data)
@@ -486,7 +469,7 @@ class DotPackClient:
         data = bytearray("$15 %d;" % (speed), "utf-8")
         await self._write_and_read(data)
 
-    async def save_gif(self, gifname: str, picname: str):  # 保存GIF（保存指令，非上传指令） *
+    async def _save_gif(self, gifname: str, picname: str):  # 保存GIF（保存指令，非上传指令） *
         data = bytearray("$6 23|FS %s|%s" % (gifname, picname), "utf-8")
         await self._write_and_read(data)
 
@@ -502,7 +485,7 @@ class DotPackClient:
 
     #############################
 
-    async def display_sys_animation(self, p: int):  # 播放系统中的编程进去的动图，并非上传到flash上的GIF *
+    async def _display_sys_animation(self, p: int):  # 播放系统中的编程进去的动图，并非上传到flash上的GIF *
         data = bytearray("$5 9 %d" % p, "utf-8")
         await self._write_and_read(data)
 
@@ -552,14 +535,14 @@ class DotPackClient:
     async def upload_animation(self, name, frames):
 
         # 要求服务端清理
-        self.printlog = False
+        self._printlog = False
         await self.delete_gif(name)
-        self.printlog = False
-        await self.display_sys_animation(1)
+        self._printlog = False
+        await self._display_sys_animation(1)
         i = -1
         for index, frame in tqdm(frames):
             i += 1
             await self._upload_image(frame)
             gifp = name
             picn = str(i)
-            await self.save_gif(gifp, picn)
+            await self._save_gif(gifp, picn)
