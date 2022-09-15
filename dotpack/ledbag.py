@@ -12,8 +12,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageSequence  # pillow
 from IPython import display
 from ipythonblocks import BlockGrid
 
-from .ledpanel import DotPackClient
-from .microblocks_client import MicroblocksClient
+
 from .utils import only_device
 
 # ref imagiCharms https://imagilabs.com/app
@@ -171,12 +170,15 @@ class DotPack:
             return
 
         if self._get_client_type(self.address) == "Microblocks_firmware":
+            from .microblocks_client import MicroblocksClient
             self._microblocks_client = MicroblocksClient(self.address)
             self._microblocks_client.connect()
             print("connected!")
             return True
 
         if self._get_client_type(self.address) == "C_firmware":
+            # fix win7 bleak bug
+            from .ledpanel import DotPackClient
             self._ledpanel = DotPackClient(self.address)
             self._execute(self._ledpanel.connect())
             print("connected!")
