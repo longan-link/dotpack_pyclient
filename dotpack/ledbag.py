@@ -198,7 +198,7 @@ class DotPack:
             self.__event_loop.call_soon_threadsafe(self.__event_loop.stop)
             self.__thread.join()
         self.__event_loop.close()
-        print("disconnected!")
+        # print("disconnected!")
 
     def load(self, filename):
         """加载图像，像素比例自动缩放到 16x16"""
