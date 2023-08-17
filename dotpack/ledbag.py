@@ -6,6 +6,7 @@ import uuid
 import asyncio
 
 # import logging
+from bleak import BleakScanner
 import loguru
 import threading
 from PIL import Image, ImageDraw, ImageFont, ImageSequence  # pillow
@@ -96,6 +97,22 @@ class DotPack:
                 coroutine, self.__event_loop
             ).result(timeout)
 
+    async def _get_address(self, address):
+        """
+        Warning: On MacOS, we can't get the ble mac address due to apple's security strategy.
+        This is a temporary way to connect ble using mac address.
+        We find ble device by name and connect it by found uuid on mac.
+        For details, see the name and MAC address mapping rules below.
+        """
+        if platform.system() == "Darwin":
+            scanner = BleakScanner()
+            devices = await scanner.discover()
+            pack_name = f"dotPack_{address[-8:].replace(':', '')}"
+            packs = [device for device in devices if device.name == pack_name]
+            if len(packs) > 0 and packs[0].address:
+                address = packs[0].address
+        return address
+
     def _is_local(self):
         if self.address == "local":
             return True
@@ -171,6 +188,7 @@ class DotPack:
 
         if self._get_client_type(self.address) == "Microblocks_firmware":
             from .microblocks_client import MicroblocksClient
+
             self._microblocks_client = MicroblocksClient(self.address)
             self._microblocks_client.connect()
             print("connected!")
@@ -179,7 +197,9 @@ class DotPack:
         if self._get_client_type(self.address) == "C_firmware":
             # fix win7 bleak bug
             from .ledpanel import DotPackClient
-            self._ledpanel = DotPackClient(self.address)
+
+            address = self._execute(self._get_address(address))
+            self._ledpanel = DotPackClient(address)
             self._execute(self._ledpanel.connect())
             print("connected!")
             return True

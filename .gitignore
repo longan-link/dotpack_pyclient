@@ -99,6 +99,7 @@ ENV/
 /site
 
 # mypy
+.vscode
 .mypy_cache/
 env
 venv3.6/
