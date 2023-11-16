@@ -678,7 +678,7 @@ class Animation:
             )
 
             if to_pack._ledpanel:
-                filename = str(self.num_frames)+"_"+filename
+                filename = str(len(self.frames)) + "_" + filename
                 to_pack._update_animation(filename, self.frames)
                 to_pack._display_gif(1, filename)
 
@@ -736,8 +736,6 @@ class Animation:
         """load gif"""
         im = Image.open(gif_image)
         self.frames = self._resize_gif(im)
-        self.num_frames = len(self.frames)
-
 
     def _resize_gif(self, im):
         frames = [
