@@ -198,7 +198,7 @@ class DotPack:
             # fix win7 bleak bug
             from .ledpanel import DotPackClient
 
-            address = self._execute(self._get_address(address))
+            address = self._execute(self._get_address(self.address))
             self._ledpanel = DotPackClient(address)
             self._execute(self._ledpanel.connect())
             print("connected!")

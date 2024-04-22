@@ -54,6 +54,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/longan-link/dotpack_pyclient",
-    version="0.3.5",
+    version="0.3.6",
     zip_safe=False,
 )
